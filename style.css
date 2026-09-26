@@ -324,6 +324,11 @@ button:hover {
   font-size: 11px;
 }
 
+.open-one {
+    text-decoration: none;
+    display: inline-block;
+}
+
 .result-url {
   min-width: 0;
   flex: 1;
