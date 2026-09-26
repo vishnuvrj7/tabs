@@ -150,10 +150,10 @@ function buildUrls() {
         "Open";
 
 
-      openButton.addEventListener("click", ()
-        => {
-          window.open(url, "_blank");
-        });
+      openButton.addEventListener("click", () => {
+        window.open(url, "_blank");
+        window.focus();
+      });
 
 
       row.append(
