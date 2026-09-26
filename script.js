@@ -1,347 +1,511 @@
-const urlInput = document.getElementById("url");
-const idsInput = document.getElementById("ids");
+const urlTemplate = document.getElementById("urlTemplate");
+const pointerName = document.getElementById("pointerName");
+const insertPointerBtn = document.getElementById("insertPointerBtn");
+
+const pointersContainer = document.getElementById("pointersContainer");
+const pointerCount = document.getElementById("pointerCount");
+
+const templatePreview = document.getElementById("templatePreview");
 
 const generateBtn = document.getElementById("generateBtn");
 const clearBtn = document.getElementById("clearBtn");
 
+const resultsSection = document.getElementById("resultsSection");
+const resultsContainer = document.getElementById("results");
+const resultCount = document.getElementById("resultCount");
+
 const copyBtn = document.getElementById("copyBtn");
 const openAllBtn = document.getElementById("openAllBtn");
 
-const resultsSection =
-  document.getElementById("resultsSection");
+const message = document.getElementById("message");
 
-const results =
-  document.getElementById("results");
-
-const count =
-  document.getElementById("count");
-
-const message =
-  document.getElementById("message");
-
-
+let pointers = [];
 let generatedUrls = [];
 
 
-/* Show status message */
+// --------------------------------------------------
+// MESSAGE
+// --------------------------------------------------
 
-function showMessage(text, type = "") {
+function showMessage(text, type = "success") {
+    message.textContent = text;
+    message.className = `message ${type}`;
 
-  message.textContent = text;
-
-  message.className =
-    `message ${type}`;
+    setTimeout(() => {
+        message.textContent = "";
+        message.className = "message";
+    }, 3000);
 }
 
 
-/* Convert the ID input into an array */
+// --------------------------------------------------
+// UPDATE TEMPLATE PREVIEW
+// --------------------------------------------------
 
-function parseIds(text) {
+function updateTemplatePreview() {
+    const value = urlTemplate.value.trim();
 
-  return [
-    ...new Set(
-      text
-        .split(/[\s,]+/)
-        .map(id => id.trim())
-        .filter(Boolean)
-    )
-  ];
-}
-
-
-/* Generate URLs */
-
-function buildUrls() {
-
-  const template =
-    urlInput.value.trim();
-
-  const ids =
-    parseIds(idsInput.value);
-
-
-  if (!template) {
-
-    showMessage(
-      "Enter a URL first.",
-      "error"
-    );
-
-    return;
-  }
-
-
-  if (!template.includes("{ID}")) {
-
-    showMessage(
-      "Your URL must contain the {ID} placeholder.",
-      "error"
-    );
-
-    return;
-  }
-
-
-  if (ids.length === 0) {
-
-    showMessage(
-      "Add at least one ID.",
-      "error"
-    );
-
-    return;
-  }
-
-
-  generatedUrls =
-    ids.map(id =>
-
-      template
-        .split("{ID}")
-        .join(
-          encodeURIComponent(id)
-        )
-
-    );
-
-
-  results.innerHTML = "";
-
-
-  generatedUrls.forEach(
-    (url, index) => {
-
-      const row =
-        document.createElement("div");
-
-      row.className = "result";
-
-
-      const number =
-        document.createElement("div");
-
-      number.className =
-        "result-number";
-
-      number.textContent =
-        index + 1;
-
-
-      const urlText =
-        document.createElement("div");
-
-      urlText.className =
-        "result-url";
-
-      urlText.textContent =
-        url;
-
-      urlText.title =
-        url;
-
-
-      /*
-       * Open individual URL
-       *
-       * "_blank" tells the browser to open
-       * the URL in a new tab/window.
-       *
-       * window.focus() asks the browser to
-       * keep the generator page active.
-       */
-
-      const openButton =
-        document.createElement("button");
-
-      openButton.className =
-        "secondary small open-one";
-
-      openButton.textContent =
-        "Open";
-
-
-      openButton.addEventListener(
-        "click",
-        () => {
-
-          window.open(
-            url,
-            "_blank"
-          );
-
-          window.focus();
-
-        }
-      );
-
-
-      row.append(
-        number,
-        urlText,
-        openButton
-      );
-
-
-      results.appendChild(row);
-
+    if (!value) {
+        templatePreview.textContent =
+            "Your URL template will appear here.";
+        return;
     }
-  );
 
-
-  count.textContent =
-    generatedUrls.length;
-
-
-  resultsSection.classList.remove(
-    "hidden"
-  );
-
-
-  showMessage(
-    `${generatedUrls.length} URL${
-      generatedUrls.length === 1
-        ? ""
-        : "s"
-    } generated.`,
-    "success"
-  );
+    templatePreview.textContent = value;
 }
 
 
-/* Copy all URLs */
+// --------------------------------------------------
+// INSERT POINTER INTO SELECTED URL TEXT
+// --------------------------------------------------
+
+insertPointerBtn.addEventListener("click", () => {
+
+    const name = pointerName.value.trim();
+
+    if (!name) {
+        showMessage("Enter a pointer name first.", "error");
+        pointerName.focus();
+        return;
+    }
+
+    const start = urlTemplate.selectionStart;
+    const end = urlTemplate.selectionEnd;
+
+    if (start === end) {
+        showMessage(
+            "Highlight the part of the URL you want to replace.",
+            "error"
+        );
+        return;
+    }
+
+    const selectedText = urlTemplate.value.substring(start, end);
+
+    // Clean pointer name
+    const cleanName = name
+        .replace(/[{}]/g, "")
+        .replace(/\s+/g, "_")
+        .toUpperCase();
+
+    // Prevent duplicate pointer names
+    if (pointers.some(pointer => pointer.name === cleanName)) {
+        showMessage(
+            `Pointer ${cleanName} already exists.`,
+            "error"
+        );
+        return;
+    }
+
+    const placeholder = `{${cleanName}}`;
+
+    // Replace selected text
+    const before = urlTemplate.value.substring(0, start);
+    const after = urlTemplate.value.substring(end);
+
+    urlTemplate.value =
+        before +
+        placeholder +
+        after;
+
+    // Store pointer
+    pointers.push({
+        name: cleanName,
+        placeholder: placeholder,
+        original: selectedText,
+        values: []
+    });
+
+    pointerName.value = "";
+
+    updateTemplatePreview();
+    renderPointers();
+
+    showMessage(
+        `${cleanName} pointer added.`,
+        "success"
+    );
+});
+
+
+// --------------------------------------------------
+// RENDER POINTERS
+// --------------------------------------------------
+
+function renderPointers() {
+
+    pointerCount.textContent = pointers.length;
+
+    if (pointers.length === 0) {
+
+        pointersContainer.innerHTML = `
+            <div class="empty-state">
+                No pointers yet.<br>
+                Select part of your URL and insert a pointer.
+            </div>
+        `;
+
+        return;
+    }
+
+    pointersContainer.innerHTML = "";
+
+    pointers.forEach((pointer, index) => {
+
+        const card = document.createElement("div");
+        card.className = "pointer-card";
+
+        const header = document.createElement("div");
+        header.className = "pointer-header";
+
+        const titleContainer = document.createElement("div");
+
+        const title = document.createElement("div");
+        title.className = "pointer-title";
+        title.textContent = pointer.name;
+
+        const placeholder = document.createElement("div");
+        placeholder.className = "pointer-placeholder";
+        placeholder.textContent =
+            `Placeholder: ${pointer.placeholder}`;
+
+        titleContainer.appendChild(title);
+        titleContainer.appendChild(placeholder);
+
+        const removeButton = document.createElement("button");
+        removeButton.className = "remove-pointer";
+        removeButton.textContent = "Remove";
+        removeButton.type = "button";
+
+        removeButton.addEventListener("click", () => {
+            removePointer(index);
+        });
+
+        header.appendChild(titleContainer);
+        header.appendChild(removeButton);
+
+        const valuesLabel = document.createElement("label");
+        valuesLabel.textContent = "Values";
+
+        const valuesInput = document.createElement("textarea");
+        valuesInput.className = "pointer-values";
+        valuesInput.rows = 4;
+        valuesInput.placeholder =
+            "Enter one value per line\n12345\n67890\nABCDE";
+
+        valuesInput.value = pointer.values.join("\n");
+
+        valuesInput.addEventListener("input", () => {
+
+            pointer.values = valuesInput.value
+                .split(/\r?\n/)
+                .map(value => value.trim())
+                .filter(value => value.length > 0);
+
+        });
+
+        const info = document.createElement("div");
+        info.className = "pointer-info";
+        info.textContent =
+            "One value per line. These values will be combined with the other pointers.";
+
+        card.appendChild(header);
+        card.appendChild(valuesLabel);
+        card.appendChild(valuesInput);
+        card.appendChild(info);
+
+        pointersContainer.appendChild(card);
+    });
+}
+
+
+// --------------------------------------------------
+// REMOVE POINTER
+// --------------------------------------------------
+
+function removePointer(index) {
+
+    const pointer = pointers[index];
+
+    if (!pointer) {
+        return;
+    }
+
+    // Remove pointer placeholder from URL
+    urlTemplate.value =
+        urlTemplate.value.replaceAll(
+            pointer.placeholder,
+            pointer.original
+        );
+
+    pointers.splice(index, 1);
+
+    updateTemplatePreview();
+    renderPointers();
+
+    showMessage(
+        `${pointer.name} removed.`,
+        "success"
+    );
+}
+
+
+// --------------------------------------------------
+// CREATE ALL COMBINATIONS
+// --------------------------------------------------
+
+function createCombinations(pointerList) {
+
+    let combinations = [{}];
+
+    pointerList.forEach(pointer => {
+
+        const newCombinations = [];
+
+        combinations.forEach(combination => {
+
+            pointer.values.forEach(value => {
+
+                newCombinations.push({
+                    ...combination,
+                    [pointer.placeholder]: value
+                });
+
+            });
+
+        });
+
+        combinations = newCombinations;
+    });
+
+    return combinations;
+}
+
+
+// --------------------------------------------------
+// GENERATE URLS
+// --------------------------------------------------
+
+function generateUrls() {
+
+    const template = urlTemplate.value.trim();
+
+    if (!template) {
+        showMessage("Please enter a URL.", "error");
+        return;
+    }
+
+    if (pointers.length === 0) {
+        showMessage(
+            "Create at least one pointer first.",
+            "error"
+        );
+        return;
+    }
+
+    // Check every pointer has values
+    for (const pointer of pointers) {
+
+        if (pointer.values.length === 0) {
+
+            showMessage(
+                `${pointer.name} has no values.`,
+                "error"
+            );
+
+            return;
+        }
+    }
+
+    const combinations = createCombinations(pointers);
+
+    generatedUrls = combinations.map(combination => {
+
+        let url = template;
+
+        Object.entries(combination).forEach(
+            ([placeholder, value]) => {
+
+                url = url.replaceAll(
+                    placeholder,
+                    encodeURIComponent(value)
+                );
+
+            }
+        );
+
+        return url;
+    });
+
+    displayResults();
+
+    showMessage(
+        `${generatedUrls.length} URLs generated.`,
+        "success"
+    );
+}
+
+
+// --------------------------------------------------
+// DISPLAY RESULTS
+// --------------------------------------------------
+
+function displayResults() {
+
+    resultsContainer.innerHTML = "";
+
+    resultCount.textContent = generatedUrls.length;
+
+    generatedUrls.forEach((url, index) => {
+
+        const item = document.createElement("div");
+        item.className = "result-item";
+
+        const number = document.createElement("span");
+        number.className = "result-number";
+        number.textContent = `${index + 1}.`;
+
+        const link = document.createElement("a");
+        link.className = "result-url";
+        link.href = url;
+        link.target = "_blank";
+        link.rel = "noopener noreferrer";
+        link.textContent = url;
+
+        const openButton = document.createElement("a");
+        openButton.className = "secondary small";
+        openButton.href = url;
+        openButton.target = "_blank";
+        openButton.rel = "noopener noreferrer";
+        openButton.textContent = "Open";
+
+        item.appendChild(number);
+        item.appendChild(link);
+        item.appendChild(openButton);
+
+        resultsContainer.appendChild(item);
+    });
+
+    resultsSection.style.display = "block";
+}
+
+
+// --------------------------------------------------
+// COPY ALL
+// --------------------------------------------------
 
 async function copyAll() {
 
-  if (!generatedUrls.length)
-    return;
+    if (generatedUrls.length === 0) {
+        showMessage(
+            "Generate URLs first.",
+            "error"
+        );
+        return;
+    }
 
+    try {
 
-  try {
+        await navigator.clipboard.writeText(
+            generatedUrls.join("\n")
+        );
 
-    await navigator.clipboard.writeText(
-      generatedUrls.join("\n")
-    );
+        showMessage(
+            "All URLs copied.",
+            "success"
+        );
 
-    showMessage(
-      "All generated URLs copied to clipboard.",
-      "success"
-    );
+    } catch (error) {
 
-  } catch {
-
-    showMessage(
-      "Clipboard access was blocked by the browser.",
-      "error"
-    );
-
-  }
+        showMessage(
+            "Could not copy URLs.",
+            "error"
+        );
+    }
 }
 
 
-/* Open all URLs */
+// --------------------------------------------------
+// OPEN ALL
+// --------------------------------------------------
 
 function openAll() {
 
-  if (!generatedUrls.length)
-    return;
+    if (generatedUrls.length === 0) {
+        showMessage(
+            "Generate URLs first.",
+            "error"
+        );
+        return;
+    }
 
+    generatedUrls.forEach(url => {
+        window.open(url, "_blank");
+    });
 
-  generatedUrls.forEach(url => {
-
-    window.open(
-      url,
-      "_blank"
+    showMessage(
+        "Opening generated URLs...",
+        "success"
     );
-
-  });
-
-
-  window.focus();
-
-
-  showMessage(
-    `${generatedUrls.length} tabs requested. Your browser may block some tabs because of popup protection.`,
-    "success"
-  );
 }
 
 
-/* Clear everything */
+// --------------------------------------------------
+// CLEAR EVERYTHING
+// --------------------------------------------------
 
-function clearAll() {
+function clearEverything() {
 
-  urlInput.value = "";
-  idsInput.value = "";
+    urlTemplate.value = "";
+    pointerName.value = "";
 
-  generatedUrls = [];
+    pointers = [];
+    generatedUrls = [];
 
-  results.innerHTML = "";
+    resultsContainer.innerHTML = "";
 
-  count.textContent = "0";
+    resultsSection.style.display = "none";
 
-  resultsSection.classList.add(
-    "hidden"
-  );
+    updateTemplatePreview();
+    renderPointers();
 
-  showMessage("");
-
-  urlInput.focus();
+    showMessage(
+        "Everything cleared.",
+        "success"
+    );
 }
 
 
-/* Button events */
+// --------------------------------------------------
+// EVENTS
+// --------------------------------------------------
+
+urlTemplate.addEventListener(
+    "input",
+    updateTemplatePreview
+);
 
 generateBtn.addEventListener(
-  "click",
-  buildUrls
-);
-
-copyBtn.addEventListener(
-  "click",
-  copyAll
-);
-
-openAllBtn.addEventListener(
-  "click",
-  openAll
+    "click",
+    generateUrls
 );
 
 clearBtn.addEventListener(
-  "click",
-  clearAll
+    "click",
+    clearEverything
+);
+
+copyBtn.addEventListener(
+    "click",
+    copyAll
+);
+
+openAllBtn.addEventListener(
+    "click",
+    openAll
 );
 
 
-/* Press Enter in URL input */
-
-urlInput.addEventListener(
-  "keydown",
-  event => {
-
-    if (event.key === "Enter") {
-
-      buildUrls();
-
-    }
-
-  }
-);
-
-
-/* Ctrl + Enter in ID textarea */
-
-idsInput.addEventListener(
-  "keydown",
-  event => {
-
-    if (
-      event.ctrlKey &&
-      event.key === "Enter"
-    ) {
-
-      buildUrls();
-
-    }
-
-  }
-);
+// Initial state
+updateTemplatePreview();
+renderPointers();
