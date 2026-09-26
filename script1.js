@@ -1,68 +1,54 @@
-```javascript
 const urlInput = document.getElementById("url");
 const idsInput = document.getElementById("ids");
 
 const generateBtn = document.getElementById("generateBtn");
 const clearBtn = document.getElementById("clearBtn");
-
 const copyBtn = document.getElementById("copyBtn");
 const openAllBtn = document.getElementById("openAllBtn");
 
 const resultsSection = document.getElementById("resultsSection");
-const results = document.getElementById("results");
+const resultsContainer = document.getElementById("results");
 const count = document.getElementById("count");
 const message = document.getElementById("message");
 
 let generatedUrls = [];
 
-
-/* Show a message */
-
-function showMessage(text, type = "") {
+// Show message
+function showMessage(text, type = "success") {
     message.textContent = text;
-    message.className = "message " + type;
+    message.className = `message ${type}`;
+
+    setTimeout(() => {
+        message.textContent = "";
+        message.className = "message";
+    }, 3000);
 }
 
-
-/* Convert the ID input into an array */
-
+// Get IDs from textarea
 function parseIds(text) {
-    return [
-        ...new Set(
-            text
-                .split(/[\s,]+/)
-                .map(id => id.trim())
-                .filter(Boolean)
-        )
-    ];
+    return text
+        .split(/\r?\n/)
+        .map(id => id.trim())
+        .filter(id => id.length > 0);
 }
 
-
-/* Generate URLs */
-
+// Generate URLs
 function buildUrls() {
-
     const template = urlInput.value.trim();
     const ids = parseIds(idsInput.value);
 
     if (!template) {
-        showMessage("Enter a URL first.", "error");
+        showMessage("Please enter a URL.", "error");
         return;
     }
 
     if (!template.includes("{ID}")) {
-        showMessage(
-            "Your URL must contain {ID}.",
-            "error"
-        );
+        showMessage("Your URL must contain {ID}.", "error");
         return;
     }
 
     if (ids.length === 0) {
-        showMessage(
-            "Add at least one ID.",
-            "error"
-        );
+        showMessage("Please enter at least one ID.", "error");
         return;
     }
 
@@ -73,199 +59,104 @@ function buildUrls() {
         );
     });
 
-    results.innerHTML = "";
+    displayUrls();
+    showMessage(`${generatedUrls.length} URLs generated.`, "success");
+}
 
-    generatedUrls.forEach((url, index) => {
-
-        const row = document.createElement("div");
-        row.className = "result";
-
-        const number = document.createElement("div");
-        number.className = "result-number";
-        number.textContent = index + 1;
-
-        const urlText = document.createElement("div");
-        urlText.className = "result-url";
-        urlText.textContent = url;
-        urlText.title = url;
-
-        const openButton = document.createElement("button");
-
-        openButton.type = "button";
-        openButton.className = "secondary small open-one";
-        openButton.textContent = "Open";
-
-        openButton.addEventListener("click", function () {
-
-            const newTab = window.open(
-                url,
-                "_blank"
-            );
-
-            if (!newTab) {
-                showMessage(
-                    "The browser blocked the new tab. Allow pop-ups for this page.",
-                    "error"
-                );
-            }
-
-        });
-
-        row.appendChild(number);
-        row.appendChild(urlText);
-        row.appendChild(openButton);
-
-        results.appendChild(row);
-    });
+// Display generated URLs
+function displayUrls() {
+    resultsContainer.innerHTML = "";
 
     count.textContent = generatedUrls.length;
 
-    resultsSection.classList.remove("hidden");
+    generatedUrls.forEach((url, index) => {
+        const item = document.createElement("div");
+        item.className = "result-item";
 
-    showMessage(
-        generatedUrls.length +
-        " URL" +
-        (generatedUrls.length === 1 ? "" : "s") +
-        " generated.",
-        "success"
-    );
+        const number = document.createElement("span");
+        number.className = "result-number";
+        number.textContent = `${index + 1}.`;
+
+        const link = document.createElement("a");
+        link.className = "result-url";
+        link.href = url;
+        link.target = "_blank";
+        link.rel = "noopener noreferrer";
+        link.textContent = url;
+
+        const openButton = document.createElement("a");
+        openButton.className = "secondary small";
+        openButton.href = url;
+        openButton.target = "_blank";
+        openButton.rel = "noopener noreferrer";
+        openButton.textContent = "Open";
+
+        item.appendChild(number);
+        item.appendChild(link);
+        item.appendChild(openButton);
+
+        resultsContainer.appendChild(item);
+    });
+
+    resultsSection.style.display = "block";
 }
 
-
-/* Copy all URLs */
-
+// Copy all URLs
 async function copyAll() {
-
     if (generatedUrls.length === 0) {
+        showMessage("Generate some URLs first.", "error");
         return;
     }
 
     try {
-
         await navigator.clipboard.writeText(
             generatedUrls.join("\n")
         );
 
-        showMessage(
-            "All URLs copied to clipboard.",
-            "success"
-        );
-
+        showMessage("All URLs copied to clipboard.", "success");
     } catch (error) {
-
-        showMessage(
-            "Unable to copy URLs.",
-            "error"
-        );
+        showMessage("Could not copy URLs.", "error");
     }
 }
 
-
-/* Open all URLs */
-
+// Open all URLs
 function openAll() {
-
     if (generatedUrls.length === 0) {
-
-        showMessage(
-            "Generate URLs first.",
-            "error"
-        );
-
+        showMessage("Generate some URLs first.", "error");
         return;
     }
 
     generatedUrls.forEach(url => {
-
-        const newTab = window.open(
-            url,
-            "_blank"
-        );
-
-        if (!newTab) {
-            return;
-        }
-
+        window.open(url, "_blank");
     });
 
-    showMessage(
-        "Open requests sent. Your browser may block multiple tabs.",
-        "success"
-    );
+    showMessage("Opening generated URLs...", "success");
 }
 
-
-/* Clear everything */
-
+// Clear everything
 function clearAll() {
-
     urlInput.value = "";
     idsInput.value = "";
 
     generatedUrls = [];
 
-    results.innerHTML = "";
-
+    resultsContainer.innerHTML = "";
     count.textContent = "0";
 
-    resultsSection.classList.add("hidden");
+    resultsSection.style.display = "none";
 
-    showMessage("");
-
-    urlInput.focus();
+    showMessage("Cleared.", "success");
 }
 
+// Button events
+generateBtn.addEventListener("click", buildUrls);
+clearBtn.addEventListener("click", clearAll);
+copyBtn.addEventListener("click", copyAll);
+openAllBtn.addEventListener("click", openAll);
 
-/* Button events */
-
-generateBtn.addEventListener(
-    "click",
-    buildUrls
-);
-
-copyBtn.addEventListener(
-    "click",
-    copyAll
-);
-
-openAllBtn.addEventListener(
-    "click",
-    openAll
-);
-
-clearBtn.addEventListener(
-    "click",
-    clearAll
-);
-
-
-/* Press Enter in URL input */
-
-urlInput.addEventListener(
-    "keydown",
-    function (event) {
-
-        if (event.key === "Enter") {
-            buildUrls();
-        }
-
+// Keyboard shortcut
+idsInput.addEventListener("keydown", event => {
+    if (event.ctrlKey && event.key === "Enter") {
+        buildUrls();
     }
-);
-
-
-/* Ctrl + Enter in ID textarea */
-
-idsInput.addEventListener(
-    "keydown",
-    function (event) {
-
-        if (
-            event.ctrlKey &&
-            event.key === "Enter"
-        ) {
-            buildUrls();
-        }
-
-    }
-);
-```
+});
