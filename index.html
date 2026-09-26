@@ -1,101 +1,119 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>ID Tab Multiplier</title>
-  <link rel="stylesheet" href="style.css">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>URL Pointer Generator</title>
+    <link rel="stylesheet" href="style.css">
 </head>
+
 <body>
 
-  <main class="app">
+<div class="container">
 
     <header>
-      <span class="badge">URL TOOL</span>
-      <h1>ID Tab <span>Multiplier</span></h1>
-      <p>
-        Generate multiple URLs by inserting IDs wherever you place
-        <code>{ID}</code>.
-      </p>
+        <h1>URL Pointer Generator</h1>
+        <p>Turn parts of a URL into dynamic pointers and generate multiple URLs.</p>
     </header>
 
+    <!-- URL TEMPLATE -->
     <section class="card">
+        <h2>1. URL Template</h2>
 
-      <label for="url">Base URL</label>
+        <label for="urlTemplate">Paste your URL</label>
 
-      <input
-        id="url"
-        type="text"
-        placeholder="https://example.com/user/{ID}"
-      >
+        <textarea
+            id="urlTemplate"
+            rows="3"
+            placeholder="https://example.com/user/12345/post/67890"
+        ></textarea>
 
-      <p class="hint">
-        Put <code>{ID}</code> exactly where the ID should be inserted.
-      </p>
+        <div class="selection-tools">
+            <input
+                type="text"
+                id="pointerName"
+                placeholder="Pointer name, e.g. USER_ID"
+            >
+
+            <button id="insertPointerBtn" class="primary">
+                Insert Pointer
+            </button>
+        </div>
+
+        <p class="hint">
+            Highlight a part of the URL above, enter a pointer name, then click
+            <strong>Insert Pointer</strong>.
+        </p>
+
+        <div id="templatePreview" class="template-preview">
+            Your URL template will appear here.
+        </div>
+    </section>
 
 
-      <label for="ids">IDs</label>
+    <!-- POINTERS -->
+    <section class="card">
+        <div class="section-heading">
+            <div>
+                <h2>2. ID Pointers</h2>
+                <p>Add values for each pointer.</p>
+            </div>
 
-      <textarea
-        id="ids"
-        placeholder="12345&#10;67890&#10;54321"
-      ></textarea>
+            <span id="pointerCount" class="badge">0</span>
+        </div>
 
-      <p class="hint">
-        One ID per line. Commas and spaces are also supported.
-      </p>
+        <div id="pointersContainer">
+            <div class="empty-state">
+                No pointers yet.<br>
+                Select part of your URL and insert a pointer.
+            </div>
+        </div>
+    </section>
 
 
-      <div class="actions">
-        <button id="generateBtn" class="primary">
-          Generate URLs
+    <!-- GENERATE -->
+    <section class="card">
+        <h2>3. Generate</h2>
+
+        <button id="generateBtn" class="primary generate">
+            Generate URLs
         </button>
 
         <button id="clearBtn" class="secondary">
-          Clear
+            Clear Everything
         </button>
-      </div>
 
-      <div id="message" class="message"></div>
-
+        <div id="message" class="message"></div>
     </section>
 
 
-    <section id="resultsSection" class="card results-card hidden">
+    <!-- RESULTS -->
+    <section id="resultsSection" class="card results-card">
 
-      <div class="results-head">
+        <div class="section-heading">
+            <div>
+                <h2>Generated URLs</h2>
+                <p><span id="resultCount">0</span> URLs generated.</p>
+            </div>
 
-        <div>
-          <label>Generated URLs</label>
-          <span id="count" class="count">0</span>
+            <div class="result-actions">
+                <button id="copyBtn" class="secondary">
+                    Copy All
+                </button>
+
+                <button id="openAllBtn" class="primary">
+                    Open All
+                </button>
+            </div>
         </div>
 
-        <div class="results-actions">
-          <button id="copyBtn" class="secondary small">
-            Copy All
-          </button>
-
-          <button id="openAllBtn" class="primary small">
-            Open All Tabs
-          </button>
-        </div>
-
-      </div>
-
-      <div id="results" class="results"></div>
+        <div id="results"></div>
 
     </section>
 
+</div>
 
-    <footer>
-      <span>Runs entirely in your browser</span>
-      <span>•</span>
-      <span>No data is uploaded</span>
-    </footer>
-
-  </main>
-
-  <script src="script.js"></script>
+<script src="script.js"></script>
 
 </body>
 </html>
