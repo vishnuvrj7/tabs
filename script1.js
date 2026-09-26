@@ -16,19 +16,15 @@ const message = document.getElementById("message");
 let generatedUrls = [];
 
 
-/* =========================
-   MESSAGE
-========================= */
+/* Show a message */
 
 function showMessage(text, type = "") {
     message.textContent = text;
-    message.className = `message ${type}`;
+    message.className = "message " + type;
 }
 
 
-/* =========================
-   PARSE IDS
-========================= */
+/* Convert the ID input into an array */
 
 function parseIds(text) {
     return [
@@ -42,162 +38,107 @@ function parseIds(text) {
 }
 
 
-/* =========================
-   GENERATE URLS
-========================= */
+/* Generate URLs */
 
 function buildUrls() {
 
     const template = urlInput.value.trim();
     const ids = parseIds(idsInput.value);
 
-
-    // Check URL
     if (!template) {
-
-        showMessage(
-            "Enter a URL first.",
-            "error"
-        );
-
+        showMessage("Enter a URL first.", "error");
         return;
     }
 
-
-    // Check {ID}
     if (!template.includes("{ID}")) {
-
         showMessage(
-            "Your URL must contain the {ID} placeholder.",
+            "Your URL must contain {ID}.",
             "error"
         );
-
         return;
     }
 
-
-    // Check IDs
     if (ids.length === 0) {
-
         showMessage(
             "Add at least one ID.",
             "error"
         );
-
         return;
     }
 
-
-    // Generate URLs
     generatedUrls = ids.map(id => {
-
-        return template
-            .split("{ID}")
-            .join(encodeURIComponent(id));
-
+        return template.replaceAll(
+            "{ID}",
+            encodeURIComponent(id)
+        );
     });
 
-
-    // Clear previous results
     results.innerHTML = "";
 
-
-    // Create result rows
     generatedUrls.forEach((url, index) => {
 
         const row = document.createElement("div");
-
         row.className = "result";
 
-
-        /* Number */
-
         const number = document.createElement("div");
-
         number.className = "result-number";
-
         number.textContent = index + 1;
 
-
-        /* URL */
-
         const urlText = document.createElement("div");
-
         urlText.className = "result-url";
-
         urlText.textContent = url;
-
         urlText.title = url;
 
+        const openButton = document.createElement("button");
 
-        /*
-         * IMPORTANT:
-         *
-         * Use an actual <a> element instead of
-         * window.open().
-         *
-         * This lets the browser handle the
-         * new-tab behavior naturally.
-         */
+        openButton.type = "button";
+        openButton.className = "secondary small open-one";
+        openButton.textContent = "Open";
 
-        const openLink = document.createElement("a");
+        openButton.addEventListener("click", function () {
 
-        openLink.className = "secondary small open-one";
+            const newTab = window.open(
+                url,
+                "_blank"
+            );
 
-        openLink.textContent = "Open";
+            if (!newTab) {
+                showMessage(
+                    "The browser blocked the new tab. Allow pop-ups for this page.",
+                    "error"
+                );
+            }
 
-        openLink.href = url;
+        });
 
-        openLink.target = "_blank";
-
-        openLink.rel = "noopener noreferrer";
-
-
-        // Make the link look like a button
-        openLink.style.textDecoration = "none";
-        openLink.style.display = "inline-block";
-
-
-        // Add everything to the row
-        row.append(
-            number,
-            urlText,
-            openLink
-        );
-
+        row.appendChild(number);
+        row.appendChild(urlText);
+        row.appendChild(openButton);
 
         results.appendChild(row);
-
     });
 
-
-    // Update counter
     count.textContent = generatedUrls.length;
 
-
-    // Show results
     resultsSection.classList.remove("hidden");
 
-
     showMessage(
-        `${generatedUrls.length} URL${
-            generatedUrls.length === 1 ? "" : "s"
-        } generated.`,
+        generatedUrls.length +
+        " URL" +
+        (generatedUrls.length === 1 ? "" : "s") +
+        " generated.",
         "success"
     );
 }
 
 
-/* =========================
-   COPY ALL
-========================= */
+/* Copy all URLs */
 
 async function copyAll() {
 
-    if (!generatedUrls.length) {
+    if (generatedUrls.length === 0) {
         return;
     }
-
 
     try {
 
@@ -205,70 +146,60 @@ async function copyAll() {
             generatedUrls.join("\n")
         );
 
-
         showMessage(
-            "All generated URLs copied to clipboard.",
+            "All URLs copied to clipboard.",
             "success"
         );
 
     } catch (error) {
 
         showMessage(
-            "Clipboard access was blocked by the browser.",
+            "Unable to copy URLs.",
             "error"
         );
-
     }
 }
 
 
-/* =========================
-   OPEN ALL
-========================= */
+/* Open all URLs */
 
 function openAll() {
 
-    if (!generatedUrls.length) {
+    if (generatedUrls.length === 0) {
+
+        showMessage(
+            "Generate URLs first.",
+            "error"
+        );
+
         return;
     }
 
-
     generatedUrls.forEach(url => {
 
-        const link = document.createElement("a");
+        const newTab = window.open(
+            url,
+            "_blank"
+        );
 
-        link.href = url;
-
-        link.target = "_blank";
-
-        link.rel = "noopener noreferrer";
-
-        link.style.display = "none";
-
-        document.body.appendChild(link);
-
-        link.click();
-
-        link.remove();
+        if (!newTab) {
+            return;
+        }
 
     });
 
-
     showMessage(
-        `${generatedUrls.length} tabs requested. Your browser may block multiple tabs.`,
+        "Open requests sent. Your browser may block multiple tabs.",
         "success"
     );
 }
 
 
-/* =========================
-   CLEAR
-========================= */
+/* Clear everything */
 
 function clearAll() {
 
     urlInput.value = "";
-
     idsInput.value = "";
 
     generatedUrls = [];
@@ -285,27 +216,22 @@ function clearAll() {
 }
 
 
-/* =========================
-   EVENTS
-========================= */
+/* Button events */
 
 generateBtn.addEventListener(
     "click",
     buildUrls
 );
 
-
 copyBtn.addEventListener(
     "click",
     copyAll
 );
 
-
 openAllBtn.addEventListener(
     "click",
     openAll
 );
-
 
 clearBtn.addEventListener(
     "click",
@@ -313,39 +239,31 @@ clearBtn.addEventListener(
 );
 
 
-/* =========================
-   ENTER TO GENERATE
-========================= */
+/* Press Enter in URL input */
 
 urlInput.addEventListener(
     "keydown",
-    event => {
+    function (event) {
 
         if (event.key === "Enter") {
-
             buildUrls();
-
         }
 
     }
 );
 
 
-/* =========================
-   CTRL + ENTER
-========================= */
+/* Ctrl + Enter in ID textarea */
 
 idsInput.addEventListener(
     "keydown",
-    event => {
+    function (event) {
 
         if (
             event.ctrlKey &&
             event.key === "Enter"
         ) {
-
             buildUrls();
-
         }
 
     }
