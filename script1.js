@@ -7,345 +7,341 @@ const clearBtn = document.getElementById("clearBtn");
 const copyBtn = document.getElementById("copyBtn");
 const openAllBtn = document.getElementById("openAllBtn");
 
-const resultsSection = document.getElementById("resultsSection");
-const results = document.getElementById("results");
-const count = document.getElementById("count");
-const message = document.getElementById("message");
+const resultsSection =
+  document.getElementById("resultsSection");
+
+const results =
+  document.getElementById("results");
+
+const count =
+  document.getElementById("count");
+
+const message =
+  document.getElementById("message");
+
 
 let generatedUrls = [];
 
 
-/* =========================
-   MESSAGE
-========================= */
+/* Show status message */
 
 function showMessage(text, type = "") {
-    message.textContent = text;
-    message.className = `message ${type}`;
+
+  message.textContent = text;
+
+  message.className =
+    `message ${type}`;
 }
 
 
-/* =========================
-   PARSE IDS
-========================= */
+/* Convert the ID input into an array */
 
 function parseIds(text) {
-    return [
-        ...new Set(
-            text
-                .split(/[\s,]+/)
-                .map(id => id.trim())
-                .filter(Boolean)
-        )
-    ];
+
+  return [
+    ...new Set(
+      text
+        .split(/[\s,]+/)
+        .map(id => id.trim())
+        .filter(Boolean)
+    )
+  ];
 }
 
 
-/* =========================
-   GENERATE URLS
-========================= */
+/* Generate URLs */
 
 function buildUrls() {
 
-    const template = urlInput.value.trim();
-    const ids = parseIds(idsInput.value);
+  const template =
+    urlInput.value.trim();
+
+  const ids =
+    parseIds(idsInput.value);
 
 
-    // Check URL
-    if (!template) {
-
-        showMessage(
-            "Enter a URL first.",
-            "error"
-        );
-
-        return;
-    }
-
-
-    // Check {ID}
-    if (!template.includes("{ID}")) {
-
-        showMessage(
-            "Your URL must contain the {ID} placeholder.",
-            "error"
-        );
-
-        return;
-    }
-
-
-    // Check IDs
-    if (ids.length === 0) {
-
-        showMessage(
-            "Add at least one ID.",
-            "error"
-        );
-
-        return;
-    }
-
-
-    // Generate URLs
-    generatedUrls = ids.map(id => {
-
-        return template
-            .split("{ID}")
-            .join(encodeURIComponent(id));
-
-    });
-
-
-    // Clear previous results
-    results.innerHTML = "";
-
-
-    // Create result rows
-    generatedUrls.forEach((url, index) => {
-
-        const row = document.createElement("div");
-
-        row.className = "result";
-
-
-        /* Number */
-
-        const number = document.createElement("div");
-
-        number.className = "result-number";
-
-        number.textContent = index + 1;
-
-
-        /* URL */
-
-        const urlText = document.createElement("div");
-
-        urlText.className = "result-url";
-
-        urlText.textContent = url;
-
-        urlText.title = url;
-
-
-        /*
-         * IMPORTANT:
-         *
-         * Use an actual <a> element instead of
-         * window.open().
-         *
-         * This lets the browser handle the
-         * new-tab behavior naturally.
-         */
-
-        const openLink = document.createElement("a");
-
-        openLink.className = "secondary small open-one";
-
-        openLink.textContent = "Open";
-
-        openLink.href = url;
-
-        openLink.target = "_blank";
-
-        openLink.rel = "noopener noreferrer";
-
-
-        // Make the link look like a button
-        openLink.style.textDecoration = "none";
-        openLink.style.display = "inline-block";
-
-
-        // Add everything to the row
-        row.append(
-            number,
-            urlText,
-            openLink
-        );
-
-
-        results.appendChild(row);
-
-    });
-
-
-    // Update counter
-    count.textContent = generatedUrls.length;
-
-
-    // Show results
-    resultsSection.classList.remove("hidden");
-
+  if (!template) {
 
     showMessage(
-        `${generatedUrls.length} URL${
-            generatedUrls.length === 1 ? "" : "s"
-        } generated.`,
-        "success"
+      "Enter a URL first.",
+      "error"
     );
+
+    return;
+  }
+
+
+  if (!template.includes("{ID}")) {
+
+    showMessage(
+      "Your URL must contain the {ID} placeholder.",
+      "error"
+    );
+
+    return;
+  }
+
+
+  if (ids.length === 0) {
+
+    showMessage(
+      "Add at least one ID.",
+      "error"
+    );
+
+    return;
+  }
+
+
+  generatedUrls =
+    ids.map(id =>
+
+      template
+        .split("{ID}")
+        .join(
+          encodeURIComponent(id)
+        )
+
+    );
+
+
+  results.innerHTML = "";
+
+
+  generatedUrls.forEach(
+    (url, index) => {
+
+      const row =
+        document.createElement("div");
+
+      row.className = "result";
+
+
+      const number =
+        document.createElement("div");
+
+      number.className =
+        "result-number";
+
+      number.textContent =
+        index + 1;
+
+
+      const urlText =
+        document.createElement("div");
+
+      urlText.className =
+        "result-url";
+
+      urlText.textContent =
+        url;
+
+      urlText.title =
+        url;
+
+
+      /*
+       * Open individual URL
+       *
+       * "_blank" tells the browser to open
+       * the URL in a new tab/window.
+       *
+       * window.focus() asks the browser to
+       * keep the generator page active.
+       */
+
+      const openButton =
+        document.createElement("button");
+
+      openButton.className =
+        "secondary small open-one";
+
+      openButton.textContent =
+        "Open";
+
+
+      openButton.addEventListener(
+        "click",
+        () => {
+
+          window.open(
+            url,
+            "_blank"
+          );
+
+          window.focus();
+
+        }
+      );
+
+
+      row.append(
+        number,
+        urlText,
+        openButton
+      );
+
+
+      results.appendChild(row);
+
+    }
+  );
+
+
+  count.textContent =
+    generatedUrls.length;
+
+
+  resultsSection.classList.remove(
+    "hidden"
+  );
+
+
+  showMessage(
+    `${generatedUrls.length} URL${
+      generatedUrls.length === 1
+        ? ""
+        : "s"
+    } generated.`,
+    "success"
+  );
 }
 
 
-/* =========================
-   COPY ALL
-========================= */
+/* Copy all URLs */
 
 async function copyAll() {
 
-    if (!generatedUrls.length) {
-        return;
-    }
+  if (!generatedUrls.length)
+    return;
 
 
-    try {
+  try {
 
-        await navigator.clipboard.writeText(
-            generatedUrls.join("\n")
-        );
+    await navigator.clipboard.writeText(
+      generatedUrls.join("\n")
+    );
 
+    showMessage(
+      "All generated URLs copied to clipboard.",
+      "success"
+    );
 
-        showMessage(
-            "All generated URLs copied to clipboard.",
-            "success"
-        );
+  } catch {
 
-    } catch (error) {
+    showMessage(
+      "Clipboard access was blocked by the browser.",
+      "error"
+    );
 
-        showMessage(
-            "Clipboard access was blocked by the browser.",
-            "error"
-        );
-
-    }
+  }
 }
 
 
-/* =========================
-   OPEN ALL
-========================= */
+/* Open all URLs */
 
 function openAll() {
 
-    if (!generatedUrls.length) {
-        return;
-    }
+  if (!generatedUrls.length)
+    return;
 
 
-    generatedUrls.forEach(url => {
+  generatedUrls.forEach(url => {
 
-        const link = document.createElement("a");
-
-        link.href = url;
-
-        link.target = "_blank";
-
-        link.rel = "noopener noreferrer";
-
-        link.style.display = "none";
-
-        document.body.appendChild(link);
-
-        link.click();
-
-        link.remove();
-
-    });
-
-
-    showMessage(
-        `${generatedUrls.length} tabs requested. Your browser may block multiple tabs.`,
-        "success"
+    window.open(
+      url,
+      "_blank"
     );
+
+  });
+
+
+  window.focus();
+
+
+  showMessage(
+    `${generatedUrls.length} tabs requested. Your browser may block some tabs because of popup protection.`,
+    "success"
+  );
 }
 
 
-/* =========================
-   CLEAR
-========================= */
+/* Clear everything */
 
 function clearAll() {
 
-    urlInput.value = "";
+  urlInput.value = "";
+  idsInput.value = "";
 
-    idsInput.value = "";
+  generatedUrls = [];
 
-    generatedUrls = [];
+  results.innerHTML = "";
 
-    results.innerHTML = "";
+  count.textContent = "0";
 
-    count.textContent = "0";
+  resultsSection.classList.add(
+    "hidden"
+  );
 
-    resultsSection.classList.add("hidden");
+  showMessage("");
 
-    showMessage("");
-
-    urlInput.focus();
+  urlInput.focus();
 }
 
 
-/* =========================
-   EVENTS
-========================= */
+/* Button events */
 
 generateBtn.addEventListener(
-    "click",
-    buildUrls
+  "click",
+  buildUrls
 );
-
 
 copyBtn.addEventListener(
-    "click",
-    copyAll
+  "click",
+  copyAll
 );
-
 
 openAllBtn.addEventListener(
-    "click",
-    openAll
+  "click",
+  openAll
 );
-
 
 clearBtn.addEventListener(
-    "click",
-    clearAll
+  "click",
+  clearAll
 );
 
 
-/* =========================
-   ENTER TO GENERATE
-========================= */
+/* Press Enter in URL input */
 
 urlInput.addEventListener(
-    "keydown",
-    event => {
+  "keydown",
+  event => {
 
-        if (event.key === "Enter") {
+    if (event.key === "Enter") {
 
-            buildUrls();
-
-        }
+      buildUrls();
 
     }
+
+  }
 );
 
 
-/* =========================
-   CTRL + ENTER
-========================= */
+/* Ctrl + Enter in ID textarea */
 
 idsInput.addEventListener(
-    "keydown",
-    event => {
+  "keydown",
+  event => {
 
-        if (
-            event.ctrlKey &&
-            event.key === "Enter"
-        ) {
+    if (
+      event.ctrlKey &&
+      event.key === "Enter"
+    ) {
 
-            buildUrls();
-
-        }
+      buildUrls();
 
     }
+
+  }
 );
